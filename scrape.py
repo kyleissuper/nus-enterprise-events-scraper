@@ -58,12 +58,70 @@ def singapore_time_string(year, month, day, hour, minute):
     l = timezone('Singapore').localize(d)
     return l.isoformat()
 
+def parse_date_string(date_string):
+    months = {
+        "January": 1,
+        "February": 2,
+        "March": 3,
+        "April": 4,
+        "May": 5,
+        "June": 6,
+        "July": 7,
+        "August": 8,
+        "September": 9,
+        "October": 10,
+        "November": 11,
+        "December": 12
+    }
+    d = {}
+    date_parts = date_string.split(" ")[1:]
+    d["day"] = int(date_parts[0])
+    d["month"] = months[date_parts[1]]
+    d["year"] = int(date_parts[2])
+    return d
+
+def parse_time_string(time_string):
+    t = []
+    time_parts = time_string.split(" - ")
+    for time_part in time_parts:
+        hour = int(time_part[:2])
+        if time_part[6:] == "PM":
+            hour += 12
+        minute = int(time_part[3:5])
+        t.append({"hour": hour, "minute": minute})
+    return t
+
 
 if __name__ == "__main__":
-    r = requests.get("http://enterprise.nus.edu.sg/event")
-    #credentials = get_credentials()
-    #http = credentials.authorize(httplib2.Http())
-    #service = discovery.build('calendar', 'v3', http=http)
+
+    # Ready Gcal
+    credentials = get_credentials()
+    http = credentials.authorize(httplib2.Http())
+    service = discovery.build('calendar', 'v3', http=http)
+
+    base_url = "http://enterprise.nus.edu.sg"
+
+    # Get latest events
+    r = requests.get(base_url + "/event")
+    soup = BeautifulSoup(r.text, "html.parser")
+    parsed_events = []
+    for event in soup.find_all("a", class_="item"):
+        parsed_events.append({
+            "title": event.find("h4").string,
+            "link": event["href"]
+        })
+    for event in parsed_events:
+        r = requests.get(base_url + event["link"])
+        s = BeautifulSoup(r.text, "html.parser")
+        date_string = s.find("h4", string="Date").find_next("p").string
+        print date_string
+        print parse_date_string(date_string)
+        time_string = s.find("h4", string="Time").find_next("p").string
+        print time_string
+        print parse_time_string(time_string)
+        break
+
+
 
     #eventsResult = service.events().list(
     #    calendarId=CALENDAR_ID,
