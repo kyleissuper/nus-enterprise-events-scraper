@@ -1,4 +1,4 @@
-from settings import CALENDAR_ID
+from settings import CALENDAR_ID, CREDS_PATH
 
 from pytz import timezone
 from bs4 import BeautifulSoup
@@ -35,8 +35,7 @@ def get_credentials():
     Returns:
         Credentials, the obtained credential.
     """
-    home_dir = os.path.expanduser('~')
-    credential_dir = os.path.join(home_dir, '.credentials')
+    credential_dir = CREDS_PATH
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
     credential_path = os.path.join(credential_dir,
@@ -97,6 +96,7 @@ if __name__ == "__main__":
 
     while True:
 
+        print "Scraping at " + str(datetime.datetime.now())
         # Ready Gcal
         credentials = get_credentials()
         http = credentials.authorize(httplib2.Http())
