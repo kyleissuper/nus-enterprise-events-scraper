@@ -85,7 +85,7 @@ def parse_time_string(time_string):
     time_parts = time_string.split(" - ")
     for time_part in time_parts:
         hour = int(time_part[:2])
-        if time_part[6:] == "PM":
+        if time_part[6:] == "PM" and hour != 12:
             hour += 12
         minute = int(time_part[3:5])
         t.append({"hour": hour, "minute": minute})
@@ -111,39 +111,44 @@ if __name__ == "__main__":
             "link": event["href"]
         })
     for event in parsed_events:
-        r = requests.get(base_url + event["link"])
-        s = BeautifulSoup(r.text, "html.parser")
-        date_string = s.find("h4", string="Date").find_next("p").string
-        print date_string
-        print parse_date_string(date_string)
-        time_string = s.find("h4", string="Time").find_next("p").string
-        print time_string
-        print parse_time_string(time_string)
-        break
-
-
-
-    #eventsResult = service.events().list(
-    #    calendarId=CALENDAR_ID,
-    #    q="Rahhh"
-    #    ).execute()
-    #events = eventsResult.get('items', [])
-    #if not events:
-    #    print "No events"
-    #    #inserted = service.events().insert(
-    #    #    calendarId=CALENDAR_ID,
-    #    #    body={
-    #    #        "summary": "New event",
-    #    #        "description": "Url to event",
-    #    #        "start": {
-    #    #            "dateTime":  singapore_time_string(2017, 10, 26, 12, 0)
-    #    #        },
-    #    #        "end": {
-    #    #            "dateTime":  singapore_time_string(2017, 10, 26, 13, 0)
-    #    #        }
-    #    #    }
-    #    #    ).execute()
-    #else:
-    #    for event in events:
-    #        start = event['start'].get('dateTime', event['start'].get('date'))
-    #        print(start, event['summary'])
+        eventsResult = service.events().list(
+            calendarId=CALENDAR_ID,
+            q=event["title"]
+            ).execute()
+        g_events = eventsResult.get('items', [])
+        if not g_events:
+            print "Scraping event page"
+            r = requests.get(base_url + event["link"])
+            s = BeautifulSoup(r.text, "html.parser")
+            date_string = s.find("h4", string="Date").find_next("p").string
+            event["date"] = parse_date_string(date_string)
+            time_string = s.find("h4", string="Time").find_next("p").string
+            event["time"] = parse_time_string(time_string)
+            inserted = service.events().insert(
+                calendarId=CALENDAR_ID,
+                body={
+                    "summary": event["title"],
+                    "description": base_url + event["link"],
+                    "start": {
+                        "dateTime":  singapore_time_string(
+                            event["date"]["year"],
+                            event["date"]["month"],
+                            event["date"]["day"],
+                            event["time"][0]["hour"],
+                            event["time"][0]["minute"]
+                        )
+                    },
+                    "end": {
+                        "dateTime":  singapore_time_string(
+                            event["date"]["year"],
+                            event["date"]["month"],
+                            event["date"]["day"],
+                            event["time"][1]["hour"],
+                            event["time"][1]["minute"]
+                        )
+                    }
+                }
+                ).execute()
+            print json.dumps(inserted, indent=4)
+        #break
+    print "Finit!"
