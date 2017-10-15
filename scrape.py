@@ -1,6 +1,8 @@
 from settings import CALENDAR_ID, CREDS_PATH
 
 from pytz import timezone
+import pytz
+
 from bs4 import BeautifulSoup
 import argparse
 import datetime
@@ -96,7 +98,12 @@ if __name__ == "__main__":
 
     while True:
 
-        print "Scraping at " + str(datetime.datetime.now())
+        utc_tz = timezone('America/New_York')
+        utc_dt = utc_tz.localize(datetime.datetime.now())
+        sg_tz = timezone('Singapore')
+        sg_dt = utc_dt.astimezone(sg_tz)
+        print "Scraping at " + str(sg_dt.isoformat())
+
         # Ready Gcal
         credentials = get_credentials()
         http = credentials.authorize(httplib2.Http())
