@@ -117,7 +117,7 @@ if __name__ == "__main__":
         parsed_events = []
         for event in soup.find_all("a", class_="item"):
             parsed_events.append({
-                "title": event.find("h4").string,
+                "title": event.find("h4").string.encode('utf-8'),
                 "link": event["href"]
             })
         for event in parsed_events:
